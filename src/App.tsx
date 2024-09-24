@@ -1,34 +1,48 @@
-import { useState } from 'react'
-import reactLogo from './assets/react.svg'
-import viteLogo from '/vite.svg'
+import { useEffect, useState } from 'react'
+import { Carousel, Gallery, Modal, Loader } from '@components'
+import { useUnsplashImages } from '@services'
 import './App.css'
 
-function App() {
-  const [count, setCount] = useState(0)
+const App = () => {
+  const { data, isFetchingNextPage, fetchNextPage } = useUnsplashImages(30)
+  const [modalImage, setModalImage] = useState<string | null>(null)
+
+  const handleImageClick = (imageUrl: string) => setModalImage(imageUrl)
+
+  const handleModalClose = () => setModalImage(null)
+
+  useEffect(() => {
+    window.addEventListener('scroll', () => {
+      const scrollTop = window.scrollY
+      const documentHeight = document.documentElement.scrollHeight
+      const viewportHeight = window.innerHeight
+      const isScrollEnd = scrollTop + viewportHeight >= documentHeight
+      if (isScrollEnd) fetchNextPage()
+    })
+  }, [])
 
   return (
-    <>
-      <div>
-        <a href="https://vitejs.dev" target="_blank">
-          <img src={viteLogo} className="logo" alt="Vite logo" />
-        </a>
-        <a href="https://react.dev" target="_blank">
-          <img src={reactLogo} className="logo react" alt="React logo" />
-        </a>
-      </div>
-      <h1>Vite + React</h1>
-      <div className="card">
-        <button onClick={() => setCount((count) => count + 1)}>
-          count is {count}
-        </button>
-        <p>
-          Edit <code>src/App.tsx</code> and save to test HMR
-        </p>
-      </div>
-      <p className="read-the-docs">
-        Click on the Vite and React logos to learn more
-      </p>
-    </>
+    <div>
+      {data && (
+        <>
+          <Carousel
+            images={data?.pages[0]}
+            visibleCount={5}
+            slideDuration={3}
+          />
+          <Gallery
+            images={data?.pages.flat().slice(5)}
+            onImageClick={handleImageClick}
+          />
+        </>
+      )}
+      {isFetchingNextPage && <Loader />}
+      <Modal
+        isOpen={!!modalImage}
+        imageUrl={modalImage as string}
+        onClose={handleModalClose}
+      />
+    </div>
   )
 }
 
