@@ -1,5 +1,8 @@
 import { useState, useEffect, useRef } from 'react'
 
+type TDragEvent = React.MouseEvent<HTMLDivElement> &
+  React.TouchEvent<HTMLDivElement>
+
 type OwnProps = {
   images: { id: string; urls: { small: string; regular: string } }[]
   visibleCount: number
@@ -14,62 +17,48 @@ export const Carousel = ({ images, visibleCount, slideDuration }: OwnProps) => {
   const isSliding = useRef(false)
 
   const startAutoSlide = () => {
-    if (intervalRef.current === null) {
-      intervalRef.current = setInterval(() => {
-        nextSlide()
-      }, slideDuration * 1000)
-    }
+    if (intervalRef.current) return
+    const duration = slideDuration * 1000
+    intervalRef.current = setInterval(() => nextSlide(), duration)
   }
 
   const stopAutoSlide = () => {
-    if (intervalRef.current) {
-      clearInterval(intervalRef.current)
-      intervalRef.current = null
-    }
+    if (!intervalRef.current) return
+    clearInterval(intervalRef.current)
+    intervalRef.current = null
+  }
+
+  const handleSlide = (actionFn: () => void) => {
+    if (isSliding.current) return
+    isSliding.current = true
+    isDragging.current = false
+    actionFn()
+    setTimeout(() => (isSliding.current = false), 300)
   }
 
   const nextSlide = () => {
-    if (isSliding.current) return
-    isSliding.current = true
-    setCurrentIndex((prevIndex) => (prevIndex + 1) % visibleCount)
-    setTimeout(() => {
-      isSliding.current = false
-    }, 300)
+    handleSlide(() => setCurrentIndex((index) => (index + 1) % visibleCount))
   }
 
   const prevSlide = () => {
-    if (isSliding.current) return
-    isSliding.current = true
-    setCurrentIndex((prevIndex) =>
-      prevIndex === 0 ? visibleCount - 1 : prevIndex - 1,
+    handleSlide(() =>
+      setCurrentIndex((index) => (index === 0 ? visibleCount - 1 : index - 1)),
     )
-    setTimeout(() => {
-      isSliding.current = false
-    }, 300)
   }
 
-  const handleDotClick = (index: number) => {
-    stopAutoSlide()
-    setCurrentIndex(index)
-    startAutoSlide()
-  }
-
-  const handleStart = (clientX: number) => {
+  const handleStart = (e: TDragEvent) => {
+    const clientX = e?.clientX || e?.touches[0]?.clientX
     startX.current = clientX
     isDragging.current = true
     stopAutoSlide()
   }
 
-  const handleMove = (clientX: number) => {
+  const handleMove = (e: TDragEvent) => {
     if (!isDragging.current || startX.current === null) return
+    const clientX = e?.clientX || e?.touches[0]?.clientX
     const distance = startX.current - clientX
-    if (distance > 10) {
-      nextSlide()
-      isDragging.current = false
-    } else if (distance < -10) {
-      prevSlide()
-      isDragging.current = false
-    }
+    if (distance > 10) nextSlide()
+    else if (distance < -10) prevSlide()
     startAutoSlide()
   }
 
@@ -78,25 +67,14 @@ export const Carousel = ({ images, visibleCount, slideDuration }: OwnProps) => {
     startAutoSlide()
   }
 
-  const handleMouseDown = (e: React.MouseEvent<HTMLElement>) => {
-    handleStart(e.clientX)
-  }
-
-  const handleMouseMove = (e: React.MouseEvent) => {
-    handleMove(e.clientX)
-  }
-
-  const handleTouchStart = (e: React.TouchEvent<HTMLElement>) => {
-    handleStart(e.touches[0].clientX)
-  }
-
-  const handleTouchMove = (e: React.TouchEvent) => {
-    handleMove(e.touches[0].clientX)
+  const handleDotClick = (index: number) => {
+    stopAutoSlide()
+    startAutoSlide()
+    setCurrentIndex(index)
   }
 
   useEffect(() => {
     startAutoSlide()
-    return () => stopAutoSlide()
   }, [])
 
   return (
@@ -104,11 +82,11 @@ export const Carousel = ({ images, visibleCount, slideDuration }: OwnProps) => {
       <div
         className="carousel_container"
         style={{ transform: `translateX(-${currentIndex * 100}%)` }}
-        onMouseDown={handleMouseDown}
-        onMouseMove={handleMouseMove}
+        onMouseDown={handleStart}
+        onMouseMove={handleMove}
         onMouseUp={handleEnd}
-        onTouchStart={handleTouchStart}
-        onTouchMove={handleTouchMove}
+        onTouchStart={handleStart}
+        onTouchMove={handleMove}
         onTouchEnd={handleEnd}
       >
         {images.slice(0, visibleCount).map((image) => (
@@ -132,9 +110,7 @@ export const Carousel = ({ images, visibleCount, slideDuration }: OwnProps) => {
           <span
             key={index}
             className={`dot ${index === currentIndex ? 'active' : ''}`}
-            onClick={() => {
-              handleDotClick(index)
-            }}
+            onClick={() => handleDotClick(index)}
           />
         ))}
       </div>
