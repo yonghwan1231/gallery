@@ -6,9 +6,7 @@ import './App.css'
 const App = () => {
   const { data, isFetchingNextPage, fetchNextPage } = useUnsplashImages(30)
   const [modalImage, setModalImage] = useState<string | null>(null)
-
   const handleImageClick = (imageUrl: string) => setModalImage(imageUrl)
-
   const handleModalClose = () => setModalImage(null)
 
   useEffect(() => {
@@ -21,21 +19,14 @@ const App = () => {
     })
   }, [])
 
+  if (!data) return null
   return (
     <div>
-      {data && (
-        <>
-          <Carousel
-            images={data?.pages[0]}
-            visibleCount={5}
-            slideDuration={3}
-          />
-          <Gallery
-            images={data?.pages.flat().slice(5)}
-            onImageClick={handleImageClick}
-          />
-        </>
-      )}
+      <Carousel images={data.pages[0]} visibleCount={5} slideDuration={3} />
+      <Gallery
+        images={data.pages.flat().slice(5)}
+        onImageClick={handleImageClick}
+      />
       {isFetchingNextPage && <Loader />}
       <Modal
         isOpen={!!modalImage}
