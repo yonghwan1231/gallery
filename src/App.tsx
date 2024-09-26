@@ -11,10 +11,9 @@ const App = () => {
 
   useEffect(() => {
     window.addEventListener('scroll', () => {
-      const scrollTop = window.scrollY
+      const { scrollY, innerHeight } = window
       const documentHeight = document.documentElement.scrollHeight
-      const viewportHeight = window.innerHeight
-      const isScrollEnd = scrollTop + viewportHeight >= documentHeight
+      const isScrollEnd = scrollY + innerHeight >= documentHeight
       if (isScrollEnd) fetchNextPage()
     })
   }, [])
@@ -22,17 +21,17 @@ const App = () => {
   if (!data) return null
   return (
     <div>
+      <Modal
+        isOpen={!!modalImage}
+        imageUrl={modalImage as string}
+        onClose={handleModalClose}
+      />
       <Carousel images={data.pages[0]} visibleCount={5} slideDuration={3} />
       <Gallery
         images={data.pages.flat().slice(5)}
         onImageClick={handleImageClick}
       />
       {isFetchingNextPage && <Loader />}
-      <Modal
-        isOpen={!!modalImage}
-        imageUrl={modalImage as string}
-        onClose={handleModalClose}
-      />
     </div>
   )
 }

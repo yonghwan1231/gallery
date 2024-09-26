@@ -8,7 +8,6 @@ type OwnProps = {
 
 export const Modal: React.FC<OwnProps> = ({ isOpen, imageUrl, onClose }) => {
   if (!isOpen) return null
-
   return (
     <div className="modal_overlay" onClick={onClose}>
       <div className="modal_content" onClick={(e) => e.stopPropagation()}>
